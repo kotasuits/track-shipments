@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi Barcode & QR Decoder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    #dropZone {
+      border: 4px dashed #007bff;
+      padding: 50px;
+      margin: 20px auto;
+      max-width: 700px;
+      border-radius: 12px;
+      cursor: pointer;
+      background: white;
+    }
+    #dropZone:hover {
+      background: #f0f8ff;
+    }
+    #result {
+      margin: 20px auto;
+      max-width: 700px;
+      text-align: left;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    img {
+      max-width: 100%;
+      margin: 15px 0;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+    }
+    .barcode-item {
+      background: #e8f5e9;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border-left: 5px solid #28a745;
+    }
+  </style>
+</head>
+<body>
+  <h1>📸 Multi Barcode & QR Code Decoder</h1>
+  <p>Upload any photo containing Barcode or QR Code</p>
+  
+  <div id="dropZone">
+    <p><strong>Click to upload or Drag & Drop image here</strong></p>
+    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+  </div>
+
+  <div id="preview"></div>
+  <div id="result"></div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const resultDiv = document.getElementById('result');
+
+    let detector = null;
+
+    // Initialize Barcode Detector with all common formats
+    async function initDetector() {
+      if (!('BarcodeDetector' in window)) {
+        resultDiv.innerHTML = `<p style="color:red;">❌ Your browser doesn't support Barcode Detection API.<br>Use latest Chrome or Edge.</p>`;
+        return false;
+      }
+
+      try {
+        detector = new BarcodeDetector({
+          formats: [
+            "code_128", "code_39", "code_93",
+            "ean_13", "ean_8", "upc_a", "upc_e",
+            "qr_code", "pdf417", "itf", "codabar"
+          ]
+        });
+        return true;
+      } catch (e) {
+        resultDiv.innerHTML = `<p style="color:orange;">⚠️ Some formats may not be supported.</p>`;
+        return true;
+      }
+    }
+
+    async function decodeImage(imgElement) {
+      if (!detector) {
+        const ok = await initDetector();
+        if (!ok) return;
+      }
+
+      try {
+        const barcodes = await detector.detect(imgElement);
+        
+        if (barcodes.length > 0) {
+          let html = `<h2>✅ Detected ${barcodes.length} Code(s)</h2>`;
+          
+          barcodes.forEach((barcode, index) => {
+            html += `
+              <div class="barcode-item">
+                <strong>#${index+1} — ${barcode.format.toUpperCase()}</strong><br>
+                <span style="font-size:1.4em; color:#28a745; font-weight:bold;">
+                  ${barcode.rawValue}
+                </span>
+              </div>`;
+          });
+
+          resultDiv.innerHTML = html;
+        } else {
+          resultDiv.innerHTML = `<p style="color:orange;">❌ No barcode or QR code found in this image.</p>`;
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `<p style="color:red;">❌ Decoding Error: ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        
+        img.onload = () => {
+          preview.innerHTML = `<h3>Image Preview:</h3>`;
+          preview.appendChild(img);
+          decodeImage(img);
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Click to upload
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      handleFile(e.target.files[0]);
+    });
+
+    // Drag & Drop
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = "#28a745";
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = "#007bff";
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = "#007bff";
+      handleFile(e.dataTransfer.files[0]);
+    });
+
+    // Auto initialize
+    initDetector();
+  </script>
+</body>
+</html>    <p>Drop your photo here or click to upload</p>
+    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+  </div>
+
+  <div id="preview"></div>
+  <div id="result"></div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const resultDiv = document.getElementById('result');
+
+    let detector = null;
+
+    async function initDetector() {
+      if ('BarcodeDetector' in window) {
+        try {
+          detector = new BarcodeDetector({
+            formats: ["code_128", "code_39", "ean_8", "ean_13", "qr_code", "pdf417", "itf"]
+          });
+          return true;
+        } catch (e) {}
+      }
+      resultDiv.innerHTML = "⚠️ Barcode Detection API not supported in this browser.<br>Use Chrome or Edge for best results.";
+      return false;
+    }
+
+    async function decodeImage(imgElement) {
+      if (!detector) {
+        const success = await initDetector();
+        if (!success) return;
+      }
+
+      try {
+        const barcodes = await detector.detect(imgElement);
+        
+        if (barcodes.length > 0) {
+          let output = `<strong>✅ Found ${barcodes.length} code(s):</strong><br><br>`;
+          
+          barcodes.forEach((barcode, index) => {
+            output += `<strong>#${index+1} - ${barcode.format}</strong><br>`;
+            output += `<span style="color:green;font-size:1.3em;">${barcode.rawValue}</span><br><br>`;
+          });
+
+          resultDiv.innerHTML = output;
+        } else {
+          resultDiv.innerHTML = "❌ No barcode or QR code found in the image.";
+        }
+      } catch (err) {
+        resultDiv.innerHTML = "❌ Error while decoding: " + err.message;
+        console.error(err);
+      }
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        
+        img.onload = () => {
+          preview.innerHTML = `<h3>Preview:</h3>`;
+          preview.appendChild(img);
+          decodeImage(img);
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Click to upload
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      handleFile(e.target.files[0]);
+    });
+
+    // Drag and drop support
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.backgroundColor = "#f0f8ff";
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.backgroundColor = "";
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.backgroundColor = "";
+      handleFile(e.dataTransfer.files[0]);
+    });
+  </script>
+</body>
+</html>
